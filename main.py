@@ -4,34 +4,35 @@ import base64
 import os
 
 app = Flask(__name__)
-CORS(app)  # Esto es vital para que Netlify pueda enviar datos
+CORS(app)
 
+# Lista para guardar las fotos temporalmente
 cola_fotos = []
 
-# Si entras a la URL normal, esto evita el error 404
 @app.route('/')
 def home():
-    return "Servidor Funcionando", 200
+    # Esto confirma que el servidor funciona
+    return jsonify({"status": "servidor_activo", "info": "usa /get_photos para descargar"}), 200
 
-# Esta es la ruta donde la web ENVÍA las fotos
 @app.route('/upload', methods=['POST'])
 def upload():
     try:
         data = request.json.get('image')
         if data:
             cola_fotos.append(data)
-            return jsonify({"status": "ok"}), 200
-        return "No data", 400
-    except:
-        return "Error", 500
+            return jsonify({"status": "recibida"}), 200
+        return jsonify({"error": "sin datos"}), 400
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
-# Esta es la ruta donde tu PC DESCARGA las fotos
 @app.route('/get_photos', methods=['GET'])
 def get_photos():
     global cola_fotos
-    enviar = list(cola_fotos)
+    # Enviamos lo que hay y limpiamos
+    copia = list(cola_fotos)
     cola_fotos.clear()
-    return jsonify({"photos": enviar})
+    # FORZAMOS que la respuesta sea JSON puro
+    return jsonify({"photos": copia})
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
